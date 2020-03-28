@@ -69,6 +69,7 @@ extension CalendarView {
         
         public var firstWeekday              = FirstWeekdayOptions.monday
         public var showAdjacentDays          = false
+        public var showSubTitle       = false
         
         //Default Style
         public var cellColorDefault          = UIColor(white: 0.0, alpha: 0.1)
@@ -76,6 +77,10 @@ extension CalendarView {
         public var cellBorderColor           = UIColor.clear
         public var cellBorderWidth           = CGFloat(0.0)
         public var cellFont                  = UIFont.systemFont(ofSize: 17)
+        
+        //SubTitle Style
+        public var cellSubTitleColor      = UIColor.gray
+        public var cellSubTitleFont                  = UIFont.systemFont(ofSize: 17)
         
         //Today Style
         public var cellTextColorToday        = UIColor.gray

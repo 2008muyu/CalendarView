@@ -58,11 +58,17 @@ class ViewController: UIViewController {
         style.weekdaysBackgroundColor  = UIColor.white
         style.firstWeekday             = .sunday
         
-        style.locale                   = Locale(identifier: "en_US")
+        style.locale                   = Locale(identifier: "zh_CN")
         
         style.cellFont = UIFont(name: "Helvetica", size: 20.0) ?? UIFont.systemFont(ofSize: 20.0)
         style.headerFont = UIFont(name: "Helvetica", size: 20.0) ?? UIFont.systemFont(ofSize: 20.0)
         style.weekdaysFont = UIFont(name: "Helvetica", size: 14.0) ?? UIFont.systemFont(ofSize: 14.0)
+        
+        style.showSubTitle = true
+        style.showAdjacentDays = false
+        
+        style.cellSubTitleColor = .red
+        style.cellSubTitleFont = UIFont(name: "Helvetica", size: 12.0) ?? UIFont.systemFont(ofSize: 12.0)
         
         calendarView.style = style
         
@@ -209,7 +215,60 @@ extension ViewController: CalendarViewDelegate {
     
 }
 
+extension CalendarEvent {
+    
+    public init(title: String, content: String, data:Data, startDate: Date) {
+        self.title = title;
+        self.startDate = startDate;
+        self.endDate = Date();
+        self.content = content;
+        self.data = data;
+    }
+    
+}
 
+extension CalendarView {
+    
+//    public func loadEvents(onComplete: ((Error?) -> Void)? = nil) {
+//
+//        EventsManager.load(from: self.startDateCache, to: self.endDateCache) { // (events:[CalendarEvent]?) in
+//
+//            if let events = $0 {
+//                self.events = events
+//                onComplete?(nil)
+//            } else {
+//                onComplete?(EventsManagerError.Authorization)
+//            }
+//
+//        }
+//    }
+    
+    
+    @discardableResult public func addEvent(_ event: CalendarEvent, duration hours: NSInteger = 1) -> Bool {
+        
+        var components = DateComponents()
+        components.hour = hours
+        
+        guard let endDate = self.calendar.date(byAdding: components, to: event.startDate) else {
+            return false
+        }
+        
+        var newEvent = event;
+        
+        newEvent.endDate = endDate
+        guard EventsManager.add(event: event) else {
+            return false
+        }
+        
+        self.events.append(event)
+        
+        self.collectionView.reloadData()
+        
+        return true
+        
+    }
+    
+}
 
 
 

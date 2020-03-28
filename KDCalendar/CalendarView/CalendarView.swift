@@ -34,10 +34,23 @@ struct EventLocation {
     let longitude: Double
 }
 
-public struct CalendarEvent {
-    public let title: String
-    public let startDate: Date
-    public let endDate:Date
+public protocol CalendarEventable {
+    var title: String { get }
+    var startDate: Date { get }
+    var endDate:Date { get }
+}
+
+public extension CalendarEventable {
+    var content : String {get{return ""}set{}}
+    var data : Any {get{return ""}set{}}
+}
+
+public struct CalendarEvent : CalendarEventable {
+    public var title: String
+    
+    public var startDate: Date
+    
+    public var endDate: Date
     
     public init(title: String, startDate: Date, endDate: Date) {
         self.title = title;

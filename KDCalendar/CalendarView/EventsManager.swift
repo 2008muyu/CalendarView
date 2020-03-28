@@ -83,6 +83,7 @@ open class EventsManager {
         let secondsFromGMTDifference = TimeInterval(TimeZone.current.secondsFromGMT())
         
         let events = store.events(matching: predicate).map {
+            
             return CalendarEvent(
                 title:      $0.title,
                 startDate:  $0.startDate.addingTimeInterval(secondsFromGMTDifference),

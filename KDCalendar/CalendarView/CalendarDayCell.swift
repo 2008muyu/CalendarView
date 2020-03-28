@@ -52,6 +52,15 @@ open class CalendarDayCell: UICollectionViewCell {
         }
     }
     
+    var subContent : String? {
+        set {
+            self.subTitle.text = newValue
+        }
+        get {
+            return self.subTitle.text
+        }
+    }
+    
     func updateTextColor() {
         if isSelected {
             self.textLabel.textColor = style.cellSelectedTextColor
@@ -70,6 +79,14 @@ open class CalendarDayCell: UICollectionViewCell {
         }
         else {
             self.textLabel.textColor = style.cellTextColorDefault
+        }
+    }
+    
+    var isShowSubTitle : Bool = false {
+        didSet {
+            layoutSubviews()
+            self.subTitle.font = style.cellSubTitleFont
+            self.subTitle.textColor = style.cellSubTitleColor
         }
     }
     
@@ -136,24 +153,24 @@ open class CalendarDayCell: UICollectionViewCell {
     
     
     let textLabel   = UILabel()
+    let subTitle = UILabel()
     let dotsView    = UIView()
     let bgView      = UIView()
     
     override init(frame: CGRect) {
         
         self.textLabel.textAlignment = NSTextAlignment.center
-        
+        self.subTitle.textAlignment = .center
         
         self.dotsView.backgroundColor = style.cellEventColor
         
         self.textLabel.font = style.cellFont
         
-        
         super.init(frame: frame)
         
         self.addSubview(self.bgView)
         self.addSubview(self.textLabel)
-        
+        self.addSubview(self.subTitle)
         self.addSubview(self.dotsView)
         
     }
@@ -178,12 +195,19 @@ open class CalendarDayCell: UICollectionViewCell {
         }
         
         self.bgView.frame           = elementsFrame
-        self.textLabel.frame        = elementsFrame
         
-        let size                            = self.bounds.height * 0.08 // always a percentage of the whole cell
+        let size                            = self.bounds.height * 0.2 // always a percentage of the whole cell
         self.dotsView.frame                 = CGRect(x: 0, y: 0, width: size, height: size)
-        self.dotsView.center                = CGPoint(x: self.textLabel.center.x, y: self.bounds.height - (2.5 * size))
         self.dotsView.layer.cornerRadius    = size * 0.5 // round it
+        
+        if isShowSubTitle {
+            self.textLabel.frame        = CGRect(origin: CGPoint(x: elementsFrame.minX, y: elementsFrame.minY), size: CGSize(width: elementsFrame.width, height: elementsFrame.height*0.5))
+            self.subTitle.frame = CGRect(origin: CGPoint(x: elementsFrame.minX, y: elementsFrame.midY), size: CGSize(width: elementsFrame.width, height: elementsFrame.height*0.35))
+        }else {
+            self.textLabel.frame        = elementsFrame
+            self.subTitle.frame = CGRect.zero
+        }
+        self.dotsView.center                = CGPoint(x: self.textLabel.frame.maxX - size/2, y: size)
         
         switch style.cellShape {
         case .square:

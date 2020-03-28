@@ -152,6 +152,12 @@ extension CalendarView: UICollectionViewDataSource {
         
         dayCell.style = style
         dayCell.clearStyles()
+        dayCell.isShowSubTitle = style.showSubTitle
+        
+        if(style.showSubTitle){
+            guard let date = self.dateFromIndexPath(indexPath) else { return UICollectionViewCell()}
+            dayCell.subContent = CalendarTool.calculationChinaCalendar(date: date, displayHoliday: true)
+        }
         
         dayCell.transform = _isRtl
             ? CGAffineTransform(scaleX: -1.0, y: 1.0)
