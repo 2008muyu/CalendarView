@@ -47,6 +47,9 @@ extension CalendarView {
         {
         }
         
+        public var festivalCalendarTitle : String = "中国节假日"
+        public var dotSourceType : EventSourceType = .systemEvent
+        
         //Event
         public var cellEventColor            = UIColor(red: 254.0/255.0, green: 73.0/255.0, blue: 64.0/255.0, alpha: 0.8)
         
@@ -70,6 +73,7 @@ extension CalendarView {
         public var firstWeekday              = FirstWeekdayOptions.monday
         public var showAdjacentDays          = false
         public var showSubTitle       = false
+        public var showHoliday       = true
         
         //Default Style
         public var cellColorDefault          = UIColor(white: 0.0, alpha: 0.1)
@@ -80,6 +84,7 @@ extension CalendarView {
         
         //SubTitle Style
         public var cellSubTitleColor      = UIColor.gray
+        public var cellFestivalTitleColor = UIColor.red
         public var cellSubTitleFont                  = UIFont.systemFont(ofSize: 17)
         
         //Today Style

@@ -22,11 +22,10 @@
  * THE SOFTWARE.
  *
  */
-#if KDCALENDAR_EVENT_MANAGER_ENABLED
 import Foundation
 import EventKit
 
-enum EventsManagerError: Error {
+public enum EventsManagerError: Error {
     case Authorization
 }
 
@@ -34,7 +33,7 @@ open class EventsManager {
     
     private static let store = EKEventStore()
     
-    static func load(from fromDate: Date, to toDate: Date, complete onComplete: @escaping ([CalendarEvent]?) -> Void) {
+    public static func load(from fromDate: Date, to toDate: Date, calendarTitle:String?, complete onComplete: @escaping ([CalendarEvent]?) -> Void) {
         
         let q = DispatchQueue.main
         
@@ -44,18 +43,18 @@ open class EventsManager {
                 guard granted else {
                     return q.async { onComplete(nil) }
                 }
-                EventsManager.fetch(from: fromDate, to: toDate) { events in
+                EventsManager.fetchEvent(from: fromDate, to: toDate, calendarTitle: calendarTitle) { events in
                     q.async { onComplete(events) }
                 }
             })
         }
         
-        EventsManager.fetch(from: fromDate, to: toDate) { events in
+        EventsManager.fetchEvent(from: fromDate, to: toDate, calendarTitle: calendarTitle) { events in
             q.async { onComplete(events) }
         }
     }
     
-    static func add(event calendarEvent: CalendarEvent) -> Bool {
+    public static func add(event calendarEvent: CalendarEvent) -> Bool {
         
         guard EKEventStore.authorizationStatus(for: .event) == .authorized else {
             return false
@@ -76,7 +75,7 @@ open class EventsManager {
         }
     }
     
-    private static func fetch(from fromDate: Date, to toDate: Date, complete onComplete: @escaping ([CalendarEvent]) -> Void) {
+    private static func fetchAll(from fromDate: Date, to toDate: Date, complete onComplete: @escaping ([CalendarEvent]) -> Void) {
         
         let predicate = store.predicateForEvents(withStart: fromDate, end: toDate, calendars: nil)
         
@@ -87,11 +86,41 @@ open class EventsManager {
             return CalendarEvent(
                 title:      $0.title,
                 startDate:  $0.startDate.addingTimeInterval(secondsFromGMTDifference),
-                endDate:    $0.endDate.addingTimeInterval(secondsFromGMTDifference)
+                endDate:    $0.endDate.addingTimeInterval(secondsFromGMTDifference),
+                type:.systemEvent
             )
         }
         
         onComplete(events)
     }
+    
+    public static func fetchEvent(from fromDate: Date, to toDate: Date, calendarTitle:String?, complete onComplete: @escaping ([CalendarEvent]) -> Void) {
+        
+        guard (calendarTitle != nil) else {
+            return fetchAll(from: fromDate, to: toDate, complete: onComplete)
+        }
+        
+        let predicate = store.predicateForEvents(withStart: fromDate, end: toDate, calendars: nil)
+        
+        let secondsFromGMTDifference = TimeInterval(TimeZone.current.secondsFromGMT())
+        
+        let events = store.events(matching: predicate)
+        
+        
+        var cEvents : [CalendarEvent] = []
+        
+        events.forEach {event in
+            if event.calendar.title == calendarTitle {
+                let event = CalendarEvent(
+                    title:      event.title,
+                    startDate:  event.startDate.addingTimeInterval(secondsFromGMTDifference),
+                    endDate:    event.endDate.addingTimeInterval(secondsFromGMTDifference),
+                    type:.systemEvent
+                )
+                cEvents.append(event)
+            }
+        }
+        
+        onComplete(cEvents)
+    }
 }
-#endif

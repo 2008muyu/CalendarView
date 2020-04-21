@@ -69,11 +69,16 @@ class ViewController: UIViewController {
         
         style.cellSubTitleColor = .red
         style.cellSubTitleFont = UIFont(name: "Helvetica", size: 12.0) ?? UIFont.systemFont(ofSize: 12.0)
+        style.cellFestivalTitleColor = .green
         
+        style.dotSourceType = .customEvent
         calendarView.style = style
         
         calendarView.dataSource = self
         calendarView.delegate = self
+        
+        calendarView.showFestival = true
+        calendarView.loadCustomEvent = true
         
         calendarView.direction = .horizontal
         calendarView.multipleSelectionEnable = false
@@ -97,16 +102,14 @@ class ViewController: UIViewController {
         let tomorrow = self.calendarView.calendar.date(byAdding: tomorrowComponents, to: today)!
         self.calendarView.selectDate(tomorrow)
 
-        #if KDCALENDAR_EVENT_MANAGER_ENABLED
-        self.calendarView.loadEvents() { error in
-            if error != nil {
-                let message = "The karmadust calender could not load system events. It is possibly a problem with permissions"
-                let alert = UIAlertController(title: "Events Loading Error", message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
-                self.present(alert, animated: true, completion: nil)
-            }
-        }
-        #endif
+//        self.calendarView.loadEvents() { error in
+//            if error != nil {
+//                let message = "The karmadust calender could not load system events. It is possibly a problem with permissions"
+//                let alert = UIAlertController(title: "Events Loading Error", message: message, preferredStyle: .alert)
+//                alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+//                self.present(alert, animated: true, completion: nil)
+//            }
+//        }
         
         
         self.calendarView.setDisplayDate(today)
@@ -140,79 +143,84 @@ class ViewController: UIViewController {
 
 extension ViewController: CalendarViewDataSource {
     
-      func startDate() -> Date {
-          
-          var dateComponents = DateComponents()
-          dateComponents.month = -1
-          
-          let today = Date()
-          
-          let threeMonthsAgo = self.calendarView.calendar.date(byAdding: dateComponents, to: today)!
-          
-          return threeMonthsAgo
-      }
-      
-      func endDate() -> Date {
-          
-          var dateComponents = DateComponents()
+    func startDate() -> Date {
         
-          dateComponents.month = 12
-          let today = Date()
-          
-          let twoYearsFromNow = self.calendarView.calendar.date(byAdding: dateComponents, to: today)!
-          
-          return twoYearsFromNow
+        var dateComponents = DateComponents()
+        dateComponents.month = -1
+        
+        let today = Date()
+        
+        let threeMonthsAgo = self.calendarView.calendar.date(byAdding: dateComponents, to: today)!
+        
+        return threeMonthsAgo
+    }
     
-      }
+    func endDate() -> Date {
+        
+        var dateComponents = DateComponents()
+        
+        dateComponents.month = 12
+        let today = Date()
+        
+        let twoYearsFromNow = self.calendarView.calendar.date(byAdding: dateComponents, to: today)!
+        
+        return twoYearsFromNow
+        
+    }
     
+    func customEvents(_ calendar: CalendarView) -> [CalendarEvent]? {
+        let test = CalendarEvent(title: "Test", startDate: Date(), endDate: Date(), type: .customEvent)
+        
+        return [test, test]
+    }
 }
 
 extension ViewController: CalendarViewDelegate {
     
-    func calendar(_ calendar: CalendarView, didSelectDate date : Date, withEvents events: [CalendarEvent]) {
-           
-           print("Did Select: \(date) with \(events.count) events")
-           for event in events {
-               print("\t\"\(event.title)\" - Starting at:\(event.startDate)")
-           }
-           
-       }
-       
-       func calendar(_ calendar: CalendarView, didScrollToMonth date : Date) {
-           print(self.calendarView.selectedDates)
-           
-           self.datePicker.setDate(date, animated: true)
-       }
-       
-       
-       func calendar(_ calendar: CalendarView, didLongPressDate date : Date, withEvents events: [CalendarEvent]?) {
-           
-           if let events = events {
-               for event in events {
-                   print("\t\"\(event.title)\" - Starting at:\(event.startDate)")
-               }
-           }
-           
-           let alert = UIAlertController(title: "Create New Event", message: "Message", preferredStyle: .alert)
-           
-           alert.addTextField { (textField: UITextField) in
-               textField.placeholder = "Event Title"
-           }
-           
-           let addEventAction = UIAlertAction(title: "Create", style: .default, handler: { (action) -> Void in
-               let title = alert.textFields?.first?.text
-               self.calendarView.addEvent(title!, date: date)
-           })
-           
-           let cancelAction = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
-           
-           alert.addAction(addEventAction)
-           alert.addAction(cancelAction)
-           
-           self.present(alert, animated: true, completion: nil)
-           
-       }
     
+    func calendar(_ calendar: CalendarView, didSelectDate date : Date, withEvents events: [CalendarEvent]) {
+        
+        print("Did Select: \(date) with \(events.count) events")
+        for event in events {
+            print("\t\"\(event.title)\" - Starting at:\(event.startDate)")
+        }
+        
+    }
+    
+    func calendar(_ calendar: CalendarView, didScrollToMonth date : Date) {
+        print(self.calendarView.selectedDates)
+        
+        self.datePicker.setDate(date, animated: true)
+    }
+    
+    
+    func calendar(_ calendar: CalendarView, didLongPressDate date : Date, withEvents events: [CalendarEvent]?) {
+        
+        if let events = events {
+            for event in events {
+                print("\t\"\(event.title)\" - Starting at:\(event.startDate)")
+            }
+        }
+        
+        let alert = UIAlertController(title: "Create New Event", message: "Message", preferredStyle: .alert)
+        
+        alert.addTextField { (textField: UITextField) in
+            textField.placeholder = "Event Title"
+        }
+        
+        let addEventAction = UIAlertAction(title: "Create", style: .default, handler: { (action) -> Void in
+            let title = alert.textFields?.first?.text
+            self.calendarView.addEvent(title!, date: date)
+        })
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+        
+        alert.addAction(addEventAction)
+        alert.addAction(cancelAction)
+        
+        self.present(alert, animated: true, completion: nil)
+        
+    }
 }
 
 extension CalendarEvent {
@@ -223,50 +231,11 @@ extension CalendarEvent {
         self.endDate = Date();
         self.content = content;
         self.data = data;
-    }
-    
+        self.type = .customEvent
+    }    
 }
 
 extension CalendarView {
-    
-//    public func loadEvents(onComplete: ((Error?) -> Void)? = nil) {
-//
-//        EventsManager.load(from: self.startDateCache, to: self.endDateCache) { // (events:[CalendarEvent]?) in
-//
-//            if let events = $0 {
-//                self.events = events
-//                onComplete?(nil)
-//            } else {
-//                onComplete?(EventsManagerError.Authorization)
-//            }
-//
-//        }
-//    }
-    
-    
-    @discardableResult public func addEvent(_ event: CalendarEvent, duration hours: NSInteger = 1) -> Bool {
-        
-        var components = DateComponents()
-        components.hour = hours
-        
-        guard let endDate = self.calendar.date(byAdding: components, to: event.startDate) else {
-            return false
-        }
-        
-        var newEvent = event;
-        
-        newEvent.endDate = endDate
-        guard EventsManager.add(event: event) else {
-            return false
-        }
-        
-        self.events.append(event)
-        
-        self.collectionView.reloadData()
-        
-        return true
-        
-    }
     
 }
 

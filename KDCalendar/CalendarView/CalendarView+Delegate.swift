@@ -53,7 +53,9 @@ extension CalendarView: UICollectionViewDelegateFlowLayout {
             selectedIndexPaths.append(indexPath)
             selectedDates.append(date)
             
-            let eventsForDaySelected = eventsByIndexPath[indexPath] ?? []
+            var eventsForDaySelected = systemEventsByIndexPath[indexPath] ?? []
+            eventsForDaySelected.append(contentsOf: customEventsByIndexPath[indexPath] ?? [])
+            
             delegate?.calendar(self, didSelectDate: date, withEvents: eventsForDaySelected)
         }
         

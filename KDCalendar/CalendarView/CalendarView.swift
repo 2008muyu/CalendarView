@@ -24,9 +24,11 @@
  */
 
 import UIKit
-#if KDCALENDAR_EVENT_MANAGER_ENABLED
 import EventKit
-#endif
+
+public enum EventSourceType {
+    case systemEvent, customEvent
+}
 
 struct EventLocation {
     let title: String
@@ -41,21 +43,25 @@ public protocol CalendarEventable {
 }
 
 public extension CalendarEventable {
+    
     var content : String {get{return ""}set{}}
     var data : Any {get{return ""}set{}}
+    var type : EventSourceType {get{return .systemEvent}set{}}
 }
 
 public struct CalendarEvent : CalendarEventable {
+    
     public var title: String
     
     public var startDate: Date
     
     public var endDate: Date
     
-    public init(title: String, startDate: Date, endDate: Date) {
+    public init(title: String, startDate: Date, endDate: Date, type : EventSourceType) {
         self.title = title;
         self.startDate = startDate;
         self.endDate = endDate;
+        self.type = type
     }
 }
 
@@ -64,9 +70,10 @@ public protocol CalendarViewDataSource {
     func endDate() -> Date
     /* optional */
     func headerString(_ date: Date) -> String?
+    func customEvents(_ calendar : CalendarView) -> [CalendarEvent]?
 }
 
-extension CalendarViewDataSource {
+public extension CalendarViewDataSource {
     
     func startDate() -> Date {
         return Date()
@@ -76,6 +83,10 @@ extension CalendarViewDataSource {
     }
     
     func headerString(_ date: Date) -> String? {
+        return nil
+    }
+    
+    func customEvents(_ calendar : CalendarView) -> [CalendarEvent]? {
         return nil
     }
 }
@@ -94,6 +105,7 @@ extension CalendarViewDelegate {
     func calendar(_ calendar : CalendarView, canSelectDate date : Date) -> Bool { return true }
     func calendar(_ calendar : CalendarView, didDeselectDate date : Date) -> Void { return }
     func calendar(_ calendar : CalendarView, didLongPressDate date : Date, withEvents events: [CalendarEvent]?) -> Void { return }
+
 }
 
 public class CalendarView: UIView {
@@ -119,6 +131,8 @@ public class CalendarView: UIView {
         return style.calendar
     }
     
+    public var festivals : [String] = []
+    
     public internal(set) var selectedIndexPaths = [IndexPath]()
     public internal(set) var selectedDates = [Date]()
 
@@ -132,18 +146,38 @@ public class CalendarView: UIView {
     internal var endIndexPath   : IndexPath!
 
     internal var _cachedMonthInfoForSection = [Int:(firstDay: Int, daysTotal: Int)]()
-    internal var eventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    internal var systemEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    internal var customEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    internal var festivalByIndexPath = [IndexPath: String]()
     
-    public var events: [CalendarEvent] = [] {
+    public var systemEvents: [CalendarEvent] = [] {
         didSet {
-            self.eventsByIndexPath.removeAll()
+            self.systemEventsByIndexPath.removeAll()
+            self.festivalByIndexPath.removeAll()
             
-            for event in events {
+            for event in systemEvents {
                 guard let indexPath = self.indexPathForDate(event.startDate) else { continue }
                 
-                var eventsForIndexPath = eventsByIndexPath[indexPath] ?? []
+                var eventsForIndexPath = systemEventsByIndexPath[indexPath] ?? []
                 eventsForIndexPath.append(event)
-                eventsByIndexPath[indexPath] = eventsForIndexPath
+                systemEventsByIndexPath[indexPath] = eventsForIndexPath
+                festivalByIndexPath[indexPath] = event.title
+            }
+            
+            DispatchQueue.main.async { self.collectionView.reloadData() }
+        }
+    }
+    
+    public var customEvents: [CalendarEvent] = [] {
+        didSet {
+            self.customEventsByIndexPath.removeAll()
+            
+            for event in customEvents {
+                guard let indexPath = self.indexPathForDate(event.startDate) else { continue }
+                
+                var eventsForIndexPath = customEventsByIndexPath[indexPath] ?? []
+                eventsForIndexPath.append(event)
+                customEventsByIndexPath[indexPath] = eventsForIndexPath
             }
             
             DispatchQueue.main.async { self.collectionView.reloadData() }
@@ -179,6 +213,30 @@ public class CalendarView: UIView {
         }
     }
     #endif
+    
+    public var showFestival : Bool = false {
+        didSet {
+            if (showFestival) {
+                loadEvents(calendarTitle: style.festivalCalendarTitle) {[weak self] (e) in
+                    if (e == nil){
+                        self?.collectionView.reloadData()
+                    }
+                }
+            }
+        }
+    }
+    
+    public var loadCustomEvent : Bool = false {
+        didSet {
+            if (loadCustomEvent) {
+                
+                if let customEvents = self.dataSource?.customEvents(self) {
+                    self.customEvents = customEvents
+                    self.collectionView.reloadData()
+                }
+            }
+        }
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -256,11 +314,12 @@ public class CalendarView: UIView {
         
         guard
             let indexPathEvents = collectionView.indexPathForItem(at: point),
-            let events = self.eventsByIndexPath[indexPathEvents], events.count > 0 else {
+            var events = self.systemEventsByIndexPath[indexPathEvents], events.count > 0 else {
                 self.delegate?.calendar(self, didLongPressDate: date, withEvents: nil)
+                
                 return
         }
-        
+        events.append(contentsOf: customEventsByIndexPath[indexPath] ?? [])
         self.delegate?.calendar(self, didLongPressDate: date, withEvents: events)
     }
     
@@ -346,6 +405,7 @@ public class CalendarView: UIView {
     
     internal func updateStyle() {
         self.headerView?.style = style
+        
     }
     
     func scrollViewOffset(for date: Date) -> CGPoint {
@@ -489,15 +549,13 @@ extension CalendarView {
     public func goToPreviousMonth() {
         goToMonthWithOffet(-1)
     }
-
-    #if KDCALENDAR_EVENT_MANAGER_ENABLED
     
-    public func loadEvents(onComplete: ((Error?) -> Void)? = nil) {
+    private func loadEvents(calendarTitle:String? = nil, onComplete: ((Error?) -> Void)? = nil) {
         
-        EventsManager.load(from: self.startDateCache, to: self.endDateCache) { // (events:[CalendarEvent]?) in
+        EventsManager.load(from: self.startDateCache, to: self.endDateCache, calendarTitle: calendarTitle) { // (events:[CalendarEvent]?) in
             
             if let events = $0 {
-                self.events = events
+                self.systemEvents = events
                 onComplete?(nil)
             } else {
                 onComplete?(EventsManagerError.Authorization)
@@ -506,7 +564,7 @@ extension CalendarView {
         }
     }
     
-    @discardableResult public func addEvent(_ title: String, date startDate: Date, duration hours: NSInteger = 1) -> Bool {
+    @discardableResult public func addEvent(_ title: String, date startDate: Date, duration hours: NSInteger = 1, eventType : EventSourceType = .customEvent) -> Bool {
         
         var components = DateComponents()
         components.hour = hours
@@ -515,19 +573,22 @@ extension CalendarView {
             return false
         }
         
-        let event = CalendarEvent(title: title, startDate: startDate, endDate: endDate)
+        let event = CalendarEvent(title: title, startDate: startDate, endDate: endDate, type:eventType)
         
-        guard EventsManager.add(event: event) else {
-            return false
+        
+        if (eventType == .systemEvent) {
+            guard EventsManager.add(event: event) else {
+                return false
+            }
+            
+            self.systemEvents.append(event)
+        }else {
+            self.customEvents.append(event)
         }
-        
-        self.events.append(event)
         
         self.collectionView.reloadData()
         
         return true
         
     }
-
-    #endif
 }

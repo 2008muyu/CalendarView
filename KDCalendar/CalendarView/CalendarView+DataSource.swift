@@ -156,7 +156,15 @@ extension CalendarView: UICollectionViewDataSource {
         
         if(style.showSubTitle){
             guard let date = self.dateFromIndexPath(indexPath) else { return UICollectionViewCell()}
-            dayCell.subContent = CalendarTool.calculationChinaCalendar(date: date, displayHoliday: true)
+            
+            if let festival = self.festivalByIndexPath[indexPath] {
+                dayCell.subContent = festival
+                dayCell.isFestivalDay = true
+            }else {
+                dayCell.subContent = CalendarDateTools.getLunarDay(date: date)
+                dayCell.isFestivalDay = false
+            }
+            
         }
         
         dayCell.transform = _isRtl
@@ -232,8 +240,11 @@ extension CalendarView: UICollectionViewDataSource {
             let weekDayOption = style.firstWeekday == .sunday ? 0 : 5
             dayCell.isWeekend = we == weekDayOption || we == 6
         }
-        
-        dayCell.eventsCount = self.eventsByIndexPath[indexPath]?.count ?? 0
+        if (style.dotSourceType == .systemEvent) {
+            dayCell.eventsCount = self.systemEventsByIndexPath[indexPath]?.count ?? 0
+        }else {
+            dayCell.eventsCount = self.customEventsByIndexPath[indexPath]?.count ?? 0
+        }
         
         return dayCell
     }

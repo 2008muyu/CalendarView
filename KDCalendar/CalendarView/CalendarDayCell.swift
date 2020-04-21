@@ -61,6 +61,12 @@ open class CalendarDayCell: UICollectionViewCell {
         }
     }
     
+    var isFestivalDay : Bool = false {
+        didSet {
+            subTitle.textColor =  isFestivalDay ? style.cellFestivalTitleColor : style.cellSubTitleColor
+        }
+    }
+    
     func updateTextColor() {
         if isSelected {
             self.textLabel.textColor = style.cellSelectedTextColor
@@ -85,8 +91,6 @@ open class CalendarDayCell: UICollectionViewCell {
     var isShowSubTitle : Bool = false {
         didSet {
             layoutSubviews()
-            self.subTitle.font = style.cellSubTitleFont
-            self.subTitle.textColor = style.cellSubTitleColor
         }
     }
     
@@ -165,6 +169,10 @@ open class CalendarDayCell: UICollectionViewCell {
         self.dotsView.backgroundColor = style.cellEventColor
         
         self.textLabel.font = style.cellFont
+        
+        self.subTitle.font = style.cellSubTitleFont
+        self.subTitle.textColor = style.cellSubTitleColor
+        self.subTitle.adjustsFontSizeToFitWidth = true
         
         super.init(frame: frame)
         
