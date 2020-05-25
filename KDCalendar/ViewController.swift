@@ -39,7 +39,7 @@ class ViewController: UIViewController {
         
         super.viewDidLoad()
         
-        let style = CalendarView.Style()
+        let style = CalendarView.Style.Default
         
         
         style.cellShape                = .bevel(8.0)
@@ -169,7 +169,7 @@ extension ViewController: CalendarViewDataSource {
     }
     
     func customEvents(_ calendar: CalendarView) -> [CalendarEvent]? {
-        let test = CalendarEvent(title: "Test", startDate: Date(), endDate: Date(), type: .customEvent)
+        let test = CalendarEvent(title: "Test", startDate: Date(), endDate: Date(), type: .customEvent, repeatCycle: .never)
         
         return [test, test]
     }
@@ -225,10 +225,11 @@ extension ViewController: CalendarViewDelegate {
 
 extension CalendarEvent {
     
-    public init(title: String, content: String, data:Data, startDate: Date) {
+    public init(title: String, content: String, data:Data, startDate: Date, cycle:CalendarEventRepeat) {
         self.title = title;
         self.startDate = startDate;
         self.endDate = Date();
+        self.repeatCycle = cycle
         self.content = content;
         self.data = data;
         self.type = .customEvent

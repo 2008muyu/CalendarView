@@ -243,7 +243,12 @@ extension CalendarView: UICollectionViewDataSource {
         if (style.dotSourceType == .systemEvent) {
             dayCell.eventsCount = self.systemEventsByIndexPath[indexPath]?.count ?? 0
         }else {
-            dayCell.eventsCount = self.customEventsByIndexPath[indexPath]?.count ?? 0
+            
+            
+            if let date = dateFromIndexPath(indexPath) {
+                dayCell.eventsCount = self.customEventDataModel.events(for: date).count
+            }
+            
         }
         
         return dayCell

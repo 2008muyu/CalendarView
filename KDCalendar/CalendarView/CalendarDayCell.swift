@@ -172,7 +172,7 @@ open class CalendarDayCell: UICollectionViewCell {
         
         self.subTitle.font = style.cellSubTitleFont
         self.subTitle.textColor = style.cellSubTitleColor
-        self.subTitle.adjustsFontSizeToFitWidth = true
+//        self.subTitle.adjustsFontSizeToFitWidth = true
         
         super.init(frame: frame)
         

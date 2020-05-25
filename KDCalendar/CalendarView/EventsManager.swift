@@ -87,7 +87,8 @@ open class EventsManager {
                 title:      $0.title,
                 startDate:  $0.startDate.addingTimeInterval(secondsFromGMTDifference),
                 endDate:    $0.endDate.addingTimeInterval(secondsFromGMTDifference),
-                type:.systemEvent
+                type:.systemEvent,
+                repeatCycle: .never
             )
         }
         
@@ -115,7 +116,7 @@ open class EventsManager {
                     title:      event.title,
                     startDate:  event.startDate.addingTimeInterval(secondsFromGMTDifference),
                     endDate:    event.endDate.addingTimeInterval(secondsFromGMTDifference),
-                    type:.systemEvent
+                    type:.systemEvent, repeatCycle: .never
                 )
                 cEvents.append(event)
             }

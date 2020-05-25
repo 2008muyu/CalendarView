@@ -47,6 +47,39 @@ extension Date {
          let delta = TimeInterval(toTimeZone.secondsFromGMT(for: self) - fromTimeZone.secondsFromGMT(for: self))
          return addingTimeInterval(delta)
     }
+    
+    func Year() -> Int {
+         return Calendar.current.component(.year, from: self)
+     }
+    
+     func Month() -> Int {
+         return Calendar.current.component(.month, from: self)
+     }
+    
+     func Day() -> Int {
+         return Calendar.current.component(.day, from: self)
+     }
+    
+     func Hour() -> Int {
+         return Calendar.current.component(.hour, from: self)
+     }
+    
+     func Minute() -> Int {
+         return Calendar.current.component(.minute, from: self)
+     }
+    
+     //18
+     func Second() -> Int {
+         return Calendar.current.component(.second, from: self)
+     }
+    
+    var withoutTime: Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: self)
+        components.timeZone = TimeZone.current
+        let date = calendar.date(from: components)
+        return date ?? self
+    }
 }
 
 

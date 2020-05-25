@@ -36,10 +36,15 @@ struct EventLocation {
     let longitude: Double
 }
 
+public enum CalendarEventRepeat : Int{
+    case never = 0, month = 1, year = 2
+}
+
 public protocol CalendarEventable {
     var title: String { get }
     var startDate: Date { get }
     var endDate:Date { get }
+    var repeatCycle:CalendarEventRepeat{ get }
 }
 
 public extension CalendarEventable {
@@ -57,10 +62,13 @@ public struct CalendarEvent : CalendarEventable {
     
     public var endDate: Date
     
-    public init(title: String, startDate: Date, endDate: Date, type : EventSourceType) {
+    public var repeatCycle:CalendarEventRepeat
+    
+    public init(title: String, startDate: Date, endDate: Date, type : EventSourceType, repeatCycle:CalendarEventRepeat) {
         self.title = title;
         self.startDate = startDate;
         self.endDate = endDate;
+        self.repeatCycle = repeatCycle
         self.type = type
     }
 }
@@ -147,7 +155,7 @@ public class CalendarView: UIView {
 
     internal var _cachedMonthInfoForSection = [Int:(firstDay: Int, daysTotal: Int)]()
     internal var systemEventsByIndexPath = [IndexPath: [CalendarEvent]]()
-    internal var customEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    internal var customEventDataModel = CustomEventDataModel()
     internal var festivalByIndexPath = [IndexPath: String]()
     
     public var systemEvents: [CalendarEvent] = [] {
@@ -170,14 +178,25 @@ public class CalendarView: UIView {
     
     public var customEvents: [CalendarEvent] = [] {
         didSet {
-            self.customEventsByIndexPath.removeAll()
+            self.customEventDataModel.clean()
             
             for event in customEvents {
                 guard let indexPath = self.indexPathForDate(event.startDate) else { continue }
                 
-                var eventsForIndexPath = customEventsByIndexPath[indexPath] ?? []
-                eventsForIndexPath.append(event)
-                customEventsByIndexPath[indexPath] = eventsForIndexPath
+                switch event.repeatCycle {
+                case .never:
+                     var eventsForIndexPath = customEventDataModel.neverEventsByIndexPath[indexPath] ?? []
+                     eventsForIndexPath.append(event)
+                    customEventDataModel.neverEventsByIndexPath[indexPath] = eventsForIndexPath
+                case .month:
+                    var eventsForIndexPath = customEventDataModel.monthEventsByIndexPath[indexPath] ?? []
+                     eventsForIndexPath.append(event)
+                    customEventDataModel.monthEventsByIndexPath[indexPath] = eventsForIndexPath
+                case .year:
+                    var eventsForIndexPath = customEventDataModel.yearEventsByIndexPath[indexPath] ?? []
+                     eventsForIndexPath.append(event)
+                    customEventDataModel.yearEventsByIndexPath[indexPath] = eventsForIndexPath
+                }
             }
             
             DispatchQueue.main.async { self.collectionView.reloadData() }
@@ -319,7 +338,7 @@ public class CalendarView: UIView {
                 
                 return
         }
-        events.append(contentsOf: customEventsByIndexPath[indexPath] ?? [])
+        events.append(contentsOf: customEventDataModel.events(for: date))
         self.delegate?.calendar(self, didLongPressDate: date, withEvents: events)
     }
     
@@ -564,7 +583,7 @@ extension CalendarView {
         }
     }
     
-    @discardableResult public func addEvent(_ title: String, date startDate: Date, duration hours: NSInteger = 1, eventType : EventSourceType = .customEvent) -> Bool {
+    @discardableResult public func addEvent(_ title: String, date startDate: Date, cycle repeatCycle:CalendarEventRepeat = .never, duration hours: NSInteger = 1, eventType : EventSourceType = .customEvent) -> Bool {
         
         var components = DateComponents()
         components.hour = hours
@@ -573,7 +592,7 @@ extension CalendarView {
             return false
         }
         
-        let event = CalendarEvent(title: title, startDate: startDate, endDate: endDate, type:eventType)
+        let event = CalendarEvent(title: title, startDate: startDate, endDate: endDate, type:eventType, repeatCycle: repeatCycle)
         
         
         if (eventType == .systemEvent) {
@@ -590,5 +609,62 @@ extension CalendarView {
         
         return true
         
+    }
+}
+
+// MARK:model struct
+
+struct CustomEventDataModel {
+    var neverEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    var monthEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    var yearEventsByIndexPath = [IndexPath: [CalendarEvent]]()
+    
+    mutating func clean() {
+        neverEventsByIndexPath.removeAll()
+        monthEventsByIndexPath.removeAll()
+        yearEventsByIndexPath.removeAll()
+    }
+    
+    func events(atIndexPath indexPath:IndexPath) -> [CalendarEvent] {
+        var events = neverEventsByIndexPath[indexPath] ?? []
+        if let monthEs = monthEventsByIndexPath[indexPath] {
+            events.append(contentsOf: monthEs)
+        }
+        
+        if let yearEs = yearEventsByIndexPath[indexPath] {
+            events.append(contentsOf: yearEs)
+        }
+        
+        return events
+    }
+    
+    func events(for date:Date) -> [CalendarEvent] {
+        var events = [CalendarEvent]()
+        neverEventsByIndexPath.forEach { (key, value) in
+            value.forEach { (event) in
+                if event.startDate.withoutTime == date.withoutTime {
+                    events.append(event)
+                }
+            }
+        }
+        
+        monthEventsByIndexPath.forEach { (key, value) in
+            value.forEach { (event) in
+                
+                if event.startDate.Day() == date.Day() {
+                    events.append(event)
+                }
+            }
+        }
+        
+        yearEventsByIndexPath.forEach { (key, value) in
+            value.forEach { (event) in
+                if event.startDate.Day() == date.Day() && event.startDate.Month() == date.Month() {
+                    events.append(event)
+                }
+            }
+        }
+        
+        return events
     }
 }
