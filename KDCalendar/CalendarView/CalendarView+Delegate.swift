@@ -55,14 +55,6 @@ extension CalendarView: UICollectionViewDelegateFlowLayout {
             
             var eventsForDaySelected = systemEventsByIndexPath[indexPath] ?? []
             
-            var dateCop = DateComponents()
-            dateCop.month = indexPath.section
-            if let currentCell = collectionView.cellForItem(at: indexPath) as? CalendarDayCell {
-                dateCop.day = currentCell.day
-            }
-            
-            let date = calendar.date(from: dateCop)!
-            
             eventsForDaySelected.append(contentsOf: customEventDataModel.events(for: date))
             
             delegate?.calendar(self, didSelectDate: date, withEvents: eventsForDaySelected)
